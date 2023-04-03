@@ -45,5 +45,6 @@ func Session() (*gocql.Session, error) {
 func Keyspace() (gocql.Session, error) {
 	cfg := Config()
 	cfg.Keyspace = db.KeySpace
-	return gocql.WrapSession(gocql.NewSession(cfg))
+	s, err := gocql.NewSession(cfg)
+	return *s, err
 }

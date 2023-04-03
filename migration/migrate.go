@@ -1,19 +1,20 @@
-package main
+package migration
 
 import (
-	"context"
+	"bytes"
+	"fmt"
 	"log"
+	"os/exec"
 
 	"github.com/spf13/pflag"
 
 	"github.com/test-scylla/config"
 	"github.com/test-scylla/db"
-	"github.com/test-scylla/migrate"
 )
 
 var verbose = pflag.Bool("verbose", false, "output more info")
 
-func main() {
+func init() {
 
 	log.Println("Bootstrap database...")
 
@@ -33,7 +34,7 @@ func createKeyspace() {
 	}
 	defer ses.Close()
 
-	if err := ses.Query(db.KeySpaceCQL).Exec(); err != nil {
+	if err := ses.Query(db.KeySpaceQuery).Exec(); err != nil {
 		log.Fatalln("ensure keyspace exists: ", err)
 	}
 }
@@ -45,9 +46,21 @@ func migrateKeyspace() {
 	}
 	defer ses.Close()
 
-	if err := migrate.Migrate(context.Background(), ses, "db/cql"); err != nil {
-		log.Fatalln("migrate: ", err)
+	runMigration()
+	// if err := migrate.Migrate(context.Background(), ses, "db/cql"); err != nil {
+	// 	log.Fatalln("migrate: ", err)
+	// }
+}
+
+func runMigration(sess string) {
+	e := exec.Command("make", "migration_up", sess)
+	var out bytes.Buffer
+	e.Stdout = &out
+	err := e.Run()
+	if err != nil {
+		log.Fatal(err)
 	}
+	fmt.Printf("Output: %q\n", out.String())
 }
 
 func printKeyspaceMetadata() {
